@@ -71,7 +71,6 @@ def main():
                             text_max_len=TEXT_MAXLEN, axis=1)
     # we get rid of samples where the answer doesn't match the context
     dataset = dataset[dataset['skip'] == False]
-    print(dataset)
 
     print('[INFO] done !')
 
