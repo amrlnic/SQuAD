@@ -322,7 +322,7 @@ def create_model(enc_dec, enc_dim, dec_dim,
 
     return model
 
-def predict(model, x_eval, path, tokenizer):
+def predict(model, x_eval, path, dataset, tokenizer):
   raw_predictions = model.predict(x_eval) 
 
   predictions = {}
@@ -333,7 +333,7 @@ def predict(model, x_eval, path, tokenizer):
 
     decoded = tokenizer.decode(tokenized_answer)
 
-    predictions[vl_df.iloc[i]['index']] = decoded
+    predictions[dataset.iloc[i]['index']] = decoded
 
   ##### Save model predictions on val set as a .JSON file  #####
   with open(path, 'w') as fp:
