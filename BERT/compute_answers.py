@@ -15,7 +15,6 @@ def main():
     parser = argparse.ArgumentParser(description='BERT')
     parser.add_argument('file', type=str, help='the test file')
     parser.add_argument('--text_maxlen', default=384, type=int)
-    parser.add_argument('--batch_size', default=10, type=int)
     parser.add_argument('--output_file', default='predictions.json',
                         type=str, help='path to the output file')
     parser.add_argument('--weights', default='BERT\\utils\\model\\weights\\bert_bilstm_noDrop_weights.h5',
@@ -27,7 +26,6 @@ def main():
     parser.add_argument('--bert_ft', default="True", type=str)
     parser.add_argument('--dropout', default="False", type=str)
     parser.add_argument('--drop_prob', default=0.5, type=float)
-    parser.add_argument('--epochs', default=10, type=int)
     args = parser.parse_args()
 
     TEXT_MAXLEN = args.text_maxlen
@@ -61,10 +59,7 @@ def main():
     with open(filepath) as file:
         data = json.load(file)
 
-    # print("###############"+str(data)+"####################")
-    # print("###############"+str(type(data))+"####################")
     dataset = load_dataset(data)
-    SAMPLES = dataset.shape[0]
 
     print('[INFO] cleaning data...')
     dataset = clean_dataset(dataset)
@@ -103,7 +98,8 @@ def main():
 
     bert_model.load_weights(weights_path)
     print('[INFO] making predictions...')
-    predict(bert_model, x[:5], output_path, dataset, tokenizer)
+    predict(bert_model, x, output_path, dataset, tokenizer)
+    print('[INFO] DONE!')
 
 
 if __name__ == '__main__':
