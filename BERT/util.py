@@ -326,9 +326,9 @@ def predict(model, x_eval, path):
   raw_predictions = model.predict(x_eval) 
 
   predictions = {}
-  for i in range(len(predictions[0])):
-    start=np.argmax(predictions[0][i])
-    end=np.argmax(predictions[1][i])
+  for i in range(len(raw_predictions[0])):
+    start=np.argmax(raw_predictions[0][i])
+    end=np.argmax(raw_predictions[1][i])
     tokenized_answer = x_eval[0][i:i+1][0][start:end+1]
 
     decoded = tokenizer.decode(tokenized_answer)
