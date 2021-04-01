@@ -103,7 +103,7 @@ def main():
 
     bert_model.load_weights(weights_path)
     print('[INFO] making predictions...')
-    predict(bert_model, x[:100], output_path)
+    predict(bert_model, x[:5], output_path, tokenizer)
 
 
 if __name__ == '__main__':

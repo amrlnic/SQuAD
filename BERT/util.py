@@ -322,7 +322,7 @@ def create_model(enc_dec, enc_dim, dec_dim,
 
     return model
 
-def predict(model, x_eval, path):
+def predict(model, x_eval, path, tokenizer):
   raw_predictions = model.predict(x_eval) 
 
   predictions = {}
