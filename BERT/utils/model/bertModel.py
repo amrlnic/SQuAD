@@ -9,21 +9,20 @@ import pandas as pd
 import numpy as np
 import pickle
 import random
+import json
 
 class BERT(TFBertModel):
 
     def __init__(
         self,
-        enc_dec=True,
-        enc_dim=128,
-        dec_dim=64,
-        rec_mod='biLSTM',
-        bert_ft=True,
-        dropout=False,
-        drop_prob=0.5
-    ):
-        # Initializing a BERT bert-base-uncased style configuration
-        configuration = BertConfig()
+        enc_dec,
+        enc_dim,
+        dec_dim,
+        rec_mod,
+        bert_ft,
+        dropout,
+        drop_prob,
+        text_max_len):
 
         """ 
         Returns a keras model for predicting the start and the end of the answer
@@ -36,40 +35,51 @@ class BERT(TFBertModel):
         dropout (boolean): whether or not using the dropout
         drop_prob (double): dropout probability
         """
+        configuration = BertConfig()
+        super().__init__(configuration)
+        self.enc_dec = enc_dec
+        self.enc_dim = enc_dim
+        self.dec_dim = dec_dim
+        self.rec_mod = rec_mod
+        self.bert_ft = bert_ft
+        self.dropout = dropout
+        self.drop_prob = drop_prob 
+        self.text_max_len = text_max_len
 
+    def create_model(self):
         # use pre - trained BERT for creating the embeddings
-        bert_model = TFBertModel.from_pretrained("bert-base-uncased")
-        if not bert_ft:
+        bert_model = super().from_pretrained("bert-base-uncased")
+        if not self.bert_ft:
             for layer in bert_model.layers:
                 layer.trainable = False
 
         # input
-        input_ids = layers.Input(shape=(MAX_LEN,), dtype=tf.int32)
-        token_type_ids = layers.Input(shape=(MAX_LEN,), dtype=tf.int32)
-        attention_mask = layers.Input(shape=(MAX_LEN,), dtype=tf.int32)
+        input_ids = layers.Input(shape=(self.text_max_len,), dtype=tf.int32)
+        token_type_ids = layers.Input(shape=(self.text_max_len,), dtype=tf.int32)
+        attention_mask = layers.Input(shape=(self.text_max_len,), dtype=tf.int32)
         embeddings = bert_model(
             input_ids, token_type_ids=token_type_ids, attention_mask=attention_mask
         )[0]
 
-        if enc_dec:  # model with encoder - decoder
+        if self.enc_dec:  # model with encoder - decoder
 
-            if rec_mod == 'biLSTM':
+            if self.rec_mod == 'biLSTM':
 
-                encoder = layers.Bidirectional(layers.LSTM(enc_dim, return_sequences=True),
+                encoder = layers.Bidirectional(layers.LSTM(self.enc_dim, return_sequences=True),
                                             merge_mode='concat')(embeddings)
 
-                decoder = layers.Bidirectional(layers.LSTM(dec_dim, return_sequences=True),
+                decoder = layers.Bidirectional(layers.LSTM(self.dec_dim, return_sequences=True),
                                             merge_mode='concat')(encoder)
 
-                high_dim = dec_dim*2  # number of units of the dense layers of the highway network
+                high_dim = self.dec_dim*2  # number of units of the dense layers of the highway network
 
             else:
 
-                encoder = layers.GRU(enc_dim, return_sequences=True)(embeddings)
+                encoder = layers.GRU(self.enc_dim, return_sequences=True)(embeddings)
 
-                decoder = layers.GRU(dec_dim, return_sequences=True)(encoder)
+                decoder = layers.GRU(self.dec_dim, return_sequences=True)(encoder)
 
-                high_dim = dec_dim
+                high_dim = self.dec_dim
 
             # highway network
             x_proj = layers.Dense(units=high_dim, activation='relu')(decoder)
@@ -82,8 +92,8 @@ class BERT(TFBertModel):
             x = embeddings
 
         # dropout
-        if dropout:
-            x = layers.Dropout(drop_prob)(x)
+        if self.dropout:
+            x = layers.Dropout(self.drop_prob)(x)
 
         # output
 
@@ -104,3 +114,22 @@ class BERT(TFBertModel):
         loss = keras.losses.SparseCategoricalCrossentropy(from_logits=False)
         optimizer = keras.optimizers.Adam(lr=5e-5)
         model.compile(optimizer=optimizer, loss=[loss, loss])
+
+        return model
+
+    def predict(self, x_eval, path):
+        raw_predictions = self.predict(x_eval) 
+
+        predictions = {}
+        for i in range(len(predictions[0])):
+            start=np.argmax(predictions[0][i])
+            end=np.argmax(predictions[1][i])
+            tokenized_answer = x_eval[0][i:i+1][0][start:end+1]
+
+            decoded = tokenizer.decode(tokenized_answer)
+
+            predictions[vl_df.iloc[i]['index']] = decoded
+
+        ##### Save model predictions on val set as a .JSON file  #####
+        with open(path, 'w') as fp:
+            json.dump(predictions, fp)
