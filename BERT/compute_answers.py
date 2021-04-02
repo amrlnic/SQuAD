@@ -4,7 +4,7 @@ import tensorflow as tf
 from tokenizers import BertWordPieceTokenizer
 from transformers import BertTokenizer
 from util import load_dataset, clean_dataset, skip, create_inputs_targets, create_model, predict
-import pickle
+#import pickle
 import numpy as np
 import json
 from utils.model import BERT
@@ -12,6 +12,7 @@ from utils.model import BERT
 tf.get_logger().setLevel('FATAL')
 
 def main():
+    # Parsing of the variables needed to run the model, from files in the same folder
     parser = argparse.ArgumentParser(description='BERT')
     parser.add_argument('file', type=str, help='the test file')
     parser.add_argument('--text_maxlen', default=384, type=int)
@@ -32,17 +33,16 @@ def main():
 
     TEXT_MAXLEN = args.text_maxlen
     BATCH_SIZE = args.batch_size
-    ENC_DEC = bool(args.enc_dec)
+    ENC_DEC = bool(args.enc_dec)  # boolean switch to determine if we are using the end/dec variation of BERT
     ENC_DIM = args.enc_dim
     DEC_DIM = args.dec_dim
     REC_MOD = args.rec_mod
-    BERT_FT = bool(args.bert_ft)
+    BERT_FT = bool(args.bert_ft)  # boolean switch to determine if we are fine-tuning the BERT
     DROPOUT = bool(args.dropout)
     DROP_PROB = args.drop_prob
     EPOCHS = args.epochs
 
     curr = os.getcwd()
-
     filepath = os.path.join(curr, args.file)
     output_path = os.path.join(curr, args.output_file)
     weights_path = os.path.join(curr, args.weights)
@@ -58,18 +58,19 @@ def main():
     tokenizer = BertWordPieceTokenizer(
         "bert_base_uncased/vocab.txt", lowercase=True)
 
+    # Load the dataset
     with open(filepath) as file:
         data = json.load(file)
-
     dataset = load_dataset(data)
 
+    # Clean the dataset
     print('[INFO] cleaning data...')
     dataset = clean_dataset(dataset)
 
-    # takes a while
+    # Filtering of the problematic rows (described in the skip function)
     dataset = dataset.apply(skip, tokenizer=tokenizer,
                             text_max_len=TEXT_MAXLEN, axis=1)
-    # we get rid of samples where the answer doesn't match the context
+    # Get rid of samples where the answer doesn't match the context
     dataset = dataset[dataset['skip'] == False]
 
     print('[INFO] done !')
@@ -78,15 +79,6 @@ def main():
     x, y = create_inputs_targets(dataset)
     print('[INFO] done !')
 
-    """bert_model = BERT(
-        ENC_DEC,
-        ENC_DIM,
-        DEC_DIM,
-        REC_MOD,
-        BERT_FT,
-        DROPOUT,
-        DROP_PROB,
-        TEXT_MAXLEN)"""
 
     bert_model = create_model(ENC_DEC,
                               ENC_DIM,

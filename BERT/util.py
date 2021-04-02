@@ -1,20 +1,17 @@
-import re
-from sklearn.model_selection import train_test_split
+#from sklearn.model_selection import train_test_split
 import gensim.downloader as gloader
 from tokenizers import BertWordPieceTokenizer
-from transformers import BertModel, BertConfig
+#from transformers import BertModel, BertConfig
 import os, re, json, requests, io, string
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-from transformers import BertTokenizer, TFBertModel, BertConfig
-import json
+from transformers import BertTokenizer, TFBertModel
 import pandas as pd
 import numpy as np
-import tensorflow as tf
-import nltk
-from nltk import word_tokenize
-nltk.download('punkt')
+#import nltk
+#from nltk import word_tokenize
+#nltk.download('punkt')
 
 
 def load_dataset(file, record_path=['data', 'paragraphs', 'qas', 'answers'], verbose=True):
@@ -24,11 +21,9 @@ def load_dataset(file, record_path=['data', 'paragraphs', 'qas', 'answers'], ver
 
   if verbose:
       print("Reading the json file")
-
-  if verbose:
       print("[INFO] processing...")
 
-  # parsing different level's in the json file
+  # parsing different levels in the json file
   js = pd.json_normalize(file, record_path)
   m = pd.json_normalize(file, record_path[:-1])
   r = pd.json_normalize(file, record_path[:-2])
@@ -37,7 +32,7 @@ def load_dataset(file, record_path=['data', 'paragraphs', 'qas', 'answers'], ver
   title = pd.json_normalize(file['data'], record_path=[
                             'paragraphs'], meta='title')
 
-  # combining it into single dataframe
+  # Combining it into a single dataframe
   idx = np.repeat(r['context'].values, r.qas.str.len())
   ndx = np.repeat(m['id'].values, m['answers'].str.len())
   m['context'] = idx
@@ -48,8 +43,7 @@ def load_dataset(file, record_path=['data', 'paragraphs', 'qas', 'answers'], ver
   main['c_id'] = main['context'].factorize()[0]
   if verbose:
       print(f"[INFO] there are {main.shape[0]} questions with single answer")
-      print(
-          f"[INFO] there are {main.groupby('c_id').sum().shape[0]} different contexts")
+      print(f"[INFO] there are {main.groupby('c_id').sum().shape[0]} different contexts")
       print(f"[INFO] there are {len(t)} unrelated subjects")
       print("[INFO] Done")
   return main
@@ -67,7 +61,7 @@ def preprocess_sentence(text):
 
 def clean_dataset(dataset):
   """
-  preprocess the dataset
+  Preprocess the dataset
   """
 
   _dataset = dataset.copy()
@@ -103,6 +97,8 @@ def skip(row, tokenizer, text_max_len):
 
   # Find end character index of answer in context
   end_char_idx = start_char_idx + len(answer)
+  
+  # Skip if the final character of the answer isn't in the context
   if end_char_idx >= len(context):
     row['skip'] = True
     return row
@@ -122,6 +118,7 @@ def skip(row, tokenizer, text_max_len):
     if sum(is_char_in_ans[start:end]) > 0:
       ans_token_idx.append(idx)
 
+  # Skip if there isn't an answer
   if len(ans_token_idx) == 0:
     row['skip'] = True
     return row
@@ -150,6 +147,8 @@ def skip(row, tokenizer, text_max_len):
     input_ids = input_ids + ([0] * padding_length)
     attention_mask = attention_mask + ([0] * padding_length)
     token_type_ids = token_type_ids + ([0] * padding_length)
+    
+  # Skip if the input length is greater than the fixed max length
   elif padding_length < 0:
     row['skip'] = True
 
@@ -160,18 +159,6 @@ def skip(row, tokenizer, text_max_len):
   return row
 
 
-def split(dataset, test_size=0.2, random_state=42):
-  """
-  split the dataset in two part: the training and the validation
-  """
-
-  # random_state for deterministic state
-  tr, vl = train_test_split(
-      dataset, test_size=test_size, random_state=random_state)
-  tr.reset_index(drop=True, inplace=True)
-  vl.reset_index(drop=True, inplace=True)
-
-  return tr, vl
 
 
 def df_to_json(df, path):
@@ -205,7 +192,7 @@ def df_to_json(df, path):
 
 def create_inputs_targets(squad_examples):
   '''
-  Function to create inputs for the model
+  Function to create inputs and labels for the model
 
   squad_examples (df)
   '''
@@ -323,6 +310,10 @@ def create_model(enc_dec, enc_dim, dec_dim,
     return model
 
 def predict(model, x_eval, path, dataset, tokenizer):
+  """  
+  The model outputs are the logits: we take them to find the answer position in the context
+  """
+  
   raw_predictions = model.predict(x_eval) 
 
   predictions = {}
