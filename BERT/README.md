@@ -37,20 +37,20 @@ you can now make predictions by using the script `compute_answer.py`
 # Results
 
 * BERT Base model (without dropout)
-  ** F1-score: 73.09 %
-  ** Exact Match: 58.22 %
+  * F1-score: 73.09 %
+  * Exact Match: 58.22 %
 * BERT Base model (with dropout)
-  ** F1-score: 72.78 %
-  ** Exact Match: 57.58 %
+  * F1-score: 72.78 %
+  * Exact Match: 57.58 %
 * Encoder decoder model with GRU (without dropout)
-  ** F1-score: 73.02 %
-  ** Exact Match: 58.10 %
+  * F1-score: 73.02 %
+  * Exact Match: 58.10 %
 * Encoder decoder model with GRU (with dropout)
-  ** F1-score: 72.84 %
-  ** Exact Match: 57.75 %
+  * F1-score: 72.84 %
+  * Exact Match: 57.75 %
 * Encoder decoder model with biLSTM (without dropout)
-  ** F1-score: 73.62 %
-  ** Exact Match: 58.10 %
+  * F1-score: 73.62 %
+  * Exact Match: 58.10 %
 * Encoder decoder model with biLSTM (with dropout)
-  ** F1-score: 73.64 %
-  ** Exact Match: 58.14 %
+  * F1-score: 73.64 %
+  * Exact Match: 58.14 %
