@@ -29,28 +29,28 @@ you can now make predictions by using the script `compute_answer.py`
 
 `python compute_answer.py TEST_SET_PATH`
 
-> You only need to run both notebook for preprocessing / training / inference.
-> The utils folder is where files (preprocessed datasets, tokenizers...) are saved.
-> You can also find the same functions, classes as in the notebooks (they are imported in the `compute_answers.py` script)
+* You only need to run both notebook for preprocessing / training / inference.
+* The utils folder is where files (preprocessed datasets, tokenizers...) are saved.
+* You can also find the same functions, classes as in the notebooks (they are imported in the `compute_answers.py` script)
 
 
 # Results
 
-BERT Base model (without dropout)
-> F1-score: 73.09 %
-> Exact Match: 58.22 %
-BERT Base model (with dropout)
-> F1-score: 72.78 %
-> Exact Match: 57.58 %
-Encoder decoder model with GRU (without dropout)
-> F1-score: 73.02 %
-> Exact Match: 58.10 %
-Encoder decoder model with GRU (with dropout)
-> F1-score: 72.84 %
-> Exact Match: 57.75 %
-Encoder decoder model with biLSTM (without dropout)
-> F1-score: 73.62 %
-> Exact Match: 58.10 %
-Encoder decoder model with biLSTM (with dropout)
-> F1-score: 73.64 %
-> Exact Match: 58.14 %
+* BERT Base model (without dropout)
+  ** F1-score: 73.09 %
+  ** Exact Match: 58.22 %
+* BERT Base model (with dropout)
+  ** F1-score: 72.78 %
+  ** Exact Match: 57.58 %
+* Encoder decoder model with GRU (without dropout)
+  ** F1-score: 73.02 %
+  ** Exact Match: 58.10 %
+* Encoder decoder model with GRU (with dropout)
+  ** F1-score: 72.84 %
+  ** Exact Match: 57.75 %
+* Encoder decoder model with biLSTM (without dropout)
+  ** F1-score: 73.62 %
+  ** Exact Match: 58.10 %
+* Encoder decoder model with biLSTM (with dropout)
+  ** F1-score: 73.64 %
+  ** Exact Match: 58.14 %
