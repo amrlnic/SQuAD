@@ -1,6 +1,6 @@
 # BIDAF model
 
-`It is strongly recommended to use the model on a machine equipped with a GPU`
+***It is strongly recommended to use the model on a machine equipped with a GPU***
 
 * run the bidaf_preprocessing notebook
 * run the bidaf_model notebook

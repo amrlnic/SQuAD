@@ -1,6 +1,6 @@
 # BERT model
 
-`It is strongly recommended to use the model on a machine equipped with a GPU`
+***It is strongly recommended to use the model on a machine equipped with a GPU***
 
 * run the BERT notebook
 
