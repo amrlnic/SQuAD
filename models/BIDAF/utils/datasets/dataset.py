@@ -33,7 +33,7 @@ class SQUAD_dataset(tf.keras.utils.Sequence):
     return dataset
 
   def to_pickle(self, path):
-    path = os.path.join(os.getcwd(), path)
+    path = os.path.abspath(path)
     folder = os.path.dirname(path)
 
     if not os.path.exists(folder):

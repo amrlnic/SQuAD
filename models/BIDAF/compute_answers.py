@@ -17,7 +17,7 @@ def main():
 	parser.add_argument('--word_tokenizer', default = 'utils/tokenizers/word_tokenizer.pkl', type = str, help = 'path to the word_tokenizer')
 	parser.add_argument('--char_tokenizer', default = 'utils/tokenizers/char_tokenizer.pkl', type = str, help = 'path to the char_tokenizer')
 	parser.add_argument('--output_file', default = 'predictions.json', type = str, help = 'path to the output file')
-	parser.add_argument('--weights', default = 'utils/models/weights/bidaf_weights.h5', type = str, help = 'path to the weights')
+	parser.add_argument('--weights', default = 'utils/models/weights/bidaf_weights', type = str, help = 'path to the weights')
 	parser.add_argument('--embedding_size', default = 300, type = int)
 	parser.add_argument('--embedding_matrix', default = 'utils/data/embedding.npy', type = str, help = 'path to the embedding matrix npy file')
 	parser.add_argument('--learning_rate', default = 0.0005, type = float)
