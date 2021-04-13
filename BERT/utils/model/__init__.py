@@ -1,1 +1,0 @@
-from .bertModel import BERT
