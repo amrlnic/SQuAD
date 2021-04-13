@@ -1,5 +1,7 @@
 # BERT model
 
+`It is strongly recommended to use the model on a machine equipped with a GPU`
+
 * run the BERT notebook
 
 you can now make predictions by using the script `compute_answer.py`
