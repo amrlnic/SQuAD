@@ -11,125 +11,108 @@ import pickle
 import random
 import json
 
-class BERT(TFBertModel):
+def create_model(enc_dec, enc_dim, dec_dim,
+                 rec_mod, bert_ft,
+                 dropout, drop_prob, text_max_len):
+    """
+    Returns a keras model for predicting the start and the end of the answer
 
-    def __init__(
-        self,
-        enc_dec,
-        enc_dim,
-        dec_dim,
-        rec_mod,
-        bert_ft,
-        dropout,
-        drop_prob,
-        text_max_len):
+    enc_dec (boolean): whether to use the encoder decoder model or not. If False, the base model will be used
+    enc_dim (int): encoding dimension
+    dec_dim (int): decoding dimension
+    rec_mod (string): type of recurrent modules // 'biLSTM' or 'GRU'
+    bert_ft (boolean): whether or not the bert will be fine - tuned
+    dropout (boolean): whether or not using the dropout
+    drop_prob (double): dropout probability
+    """
 
-        """ 
-        Returns a keras model for predicting the start and the end of the answer
+    # use pre - trained BERT for creating the embeddings
+    bert_model = TFBertModel.from_pretrained("bert-base-uncased")
+    if not bert_ft:
+      for layer in bert_model.layers:
+        layer.trainable = False
 
-        enc_dec (boolean): whether to use the encoder decoder model or not. If False, the base model will be used
-        enc_dim (int): encoding dimension
-        dec_dim (int): decoding dimension
-        rec_mod (string): type of recurrent modules // 'biLSTM' or 'GRU'
-        bert_ft (boolean): whether or not the bert will be fine - tuned
-        dropout (boolean): whether or not using the dropout
-        drop_prob (double): dropout probability
-        """
-        configuration = BertConfig()
-        super().__init__(configuration)
-        self.enc_dec = enc_dec
-        self.enc_dim = enc_dim
-        self.dec_dim = dec_dim
-        self.rec_mod = rec_mod
-        self.bert_ft = bert_ft
-        self.dropout = dropout
-        self.drop_prob = drop_prob 
-        self.text_max_len = text_max_len
+    # input
+    input_ids = layers.Input(shape=(text_max_len,), dtype=tf.int32)
+    token_type_ids = layers.Input(shape=(text_max_len,), dtype=tf.int32)
+    attention_mask = layers.Input(shape=(text_max_len,), dtype=tf.int32)
+    embeddings = bert_model(
+        input_ids, token_type_ids=token_type_ids, attention_mask=attention_mask
+    )[0]
 
-    def create_model(self):
-        # use pre - trained BERT for creating the embeddings
-        bert_model = super().from_pretrained("bert-base-uncased")
-        if not self.bert_ft:
-            for layer in bert_model.layers:
-                layer.trainable = False
+    if enc_dec:  # model with encoder - decoder
 
-        # input
-        input_ids = layers.Input(shape=(self.text_max_len,), dtype=tf.int32)
-        token_type_ids = layers.Input(shape=(self.text_max_len,), dtype=tf.int32)
-        attention_mask = layers.Input(shape=(self.text_max_len,), dtype=tf.int32)
-        embeddings = bert_model(
-            input_ids, token_type_ids=token_type_ids, attention_mask=attention_mask
-        )[0]
+      if rec_mod == 'biLSTM':
 
-        if self.enc_dec:  # model with encoder - decoder
+        encoder = layers.Bidirectional(layers.LSTM(enc_dim, return_sequences=True),
+                                          merge_mode='concat')(embeddings)
 
-            if self.rec_mod == 'biLSTM':
+        decoder = layers.Bidirectional(layers.LSTM(dec_dim, return_sequences=True),
+                                                      merge_mode='concat')(encoder)
 
-                encoder = layers.Bidirectional(layers.LSTM(self.enc_dim, return_sequences=True),
-                                            merge_mode='concat')(embeddings)
+        high_dim = dec_dim*2  # number of units of the dense layers of the highway network
 
-                decoder = layers.Bidirectional(layers.LSTM(self.dec_dim, return_sequences=True),
-                                            merge_mode='concat')(encoder)
+      else:
 
-                high_dim = self.dec_dim*2  # number of units of the dense layers of the highway network
+        encoder = layers.GRU(enc_dim, return_sequences=True)(embeddings)
 
-            else:
+        decoder = layers.GRU(dec_dim, return_sequences=True)(encoder)
 
-                encoder = layers.GRU(self.enc_dim, return_sequences=True)(embeddings)
+        high_dim = dec_dim
 
-                decoder = layers.GRU(self.dec_dim, return_sequences=True)(encoder)
+      # highway network
+      x_proj = layers.Dense(units=high_dim, activation='relu')(decoder)
+      x_gate = layers.Dense(units=high_dim, activation='sigmoid')(decoder)
 
-                high_dim = self.dec_dim
+      x = (x_proj * x_gate) + (1 - x_gate) * decoder
 
-            # highway network
-            x_proj = layers.Dense(units=high_dim, activation='relu')(decoder)
-            x_gate = layers.Dense(units=high_dim, activation='sigmoid')(decoder)
+    else:  # base model
 
-            x = (x_proj * x_gate) + (1 - x_gate) * decoder
+      x = embeddings
 
-        else:  # base model
+    # dropout
+    if dropout:
+      x = layers.Dropout(drop_prob)(x)
 
-            x = embeddings
+    # output
 
-        # dropout
-        if self.dropout:
-            x = layers.Dropout(self.drop_prob)(x)
+    start_logits = layers.Dense(1, use_bias=False)(x)
+    start_logits = layers.Flatten()(start_logits)
 
-        # output
+    end_logits = layers.Dense(1, use_bias=False)(x)
+    end_logits = layers.Flatten()(end_logits)
 
-        start_logits = layers.Dense(1, use_bias=False)(x)
-        start_logits = layers.Flatten()(start_logits)
+    start_probs = layers.Activation(keras.activations.softmax)(start_logits)
+    end_probs = layers.Activation(keras.activations.softmax)(end_logits)
 
-        end_logits = layers.Dense(1, use_bias=False)(x)
-        end_logits = layers.Flatten()(end_logits)
+    model = keras.Model(
+        inputs=[input_ids, token_type_ids, attention_mask],
+        outputs=[start_probs, end_probs]
+    )
 
-        start_probs = layers.Activation(keras.activations.softmax)(start_logits)
-        end_probs = layers.Activation(keras.activations.softmax)(end_logits)
+    loss = keras.losses.SparseCategoricalCrossentropy(from_logits=False)
+    optimizer = keras.optimizers.Adam(lr=5e-5)
+    model.compile(optimizer=optimizer, loss=[loss, loss])
 
-        model = keras.Model(
-            inputs=[input_ids, token_type_ids, attention_mask],
-            outputs=[start_probs, end_probs]
-        )
+    return model
 
-        loss = keras.losses.SparseCategoricalCrossentropy(from_logits=False)
-        optimizer = keras.optimizers.Adam(lr=5e-5)
-        model.compile(optimizer=optimizer, loss=[loss, loss])
+def predict(model, x_eval, path, dataset, tokenizer):
+  """  
+  The model outputs are the logits: we take them to find the answer position in the context
+  """
+  
+  raw_predictions = model.predict(x_eval) 
 
-        return model
+  predictions = {}
+  for i in range(len(raw_predictions[0])):
+    start=np.argmax(raw_predictions[0][i])
+    end=np.argmax(raw_predictions[1][i])
+    tokenized_answer = x_eval[0][i:i+1][0][start:end+1]
 
-    def predict(self, x_eval, path):
-        raw_predictions = self.predict(x_eval) 
+    decoded = tokenizer.decode(tokenized_answer)
 
-        predictions = {}
-        for i in range(len(predictions[0])):
-            start=np.argmax(predictions[0][i])
-            end=np.argmax(predictions[1][i])
-            tokenized_answer = x_eval[0][i:i+1][0][start:end+1]
+    predictions[dataset.iloc[i]['index']] = decoded
 
-            decoded = tokenizer.decode(tokenized_answer)
-
-            predictions[vl_df.iloc[i]['index']] = decoded
-
-        ##### Save model predictions on val set as a .JSON file  #####
-        with open(path, 'w') as fp:
-            json.dump(predictions, fp)
+  ##### Save model predictions on val set as a .JSON file  #####
+  with open(path, 'w') as fp:
+      json.dump(predictions, fp)
