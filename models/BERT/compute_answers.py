@@ -3,11 +3,11 @@ import os
 import tensorflow as tf
 from tokenizers import BertWordPieceTokenizer
 from transformers import BertTokenizer
-from utils.util import load_dataset, clean_dataset, skip, create_inputs_targets, create_model, predict
+from utils.util import load_dataset, clean_dataset, skip, create_inputs_targets
+from utils.model import create_model, predict
 #import pickle
 import numpy as np
 import json
-from utils.model import BERT
 
 tf.get_logger().setLevel('FATAL')
 

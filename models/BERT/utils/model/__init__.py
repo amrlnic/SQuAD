@@ -1,1 +1,1 @@
-from .bertModel import BERT
+from .bertModel import *
